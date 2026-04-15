@@ -26,7 +26,7 @@ public class Main {
         rc.register(com.smartcampus.exception.GlobalExceptionMapper.class);
         rc.register(com.smartcampus.filter.ApiLoggingFilter.class);
 
-        HttpServer server = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
+        HttpServer server = GrizzlyHttpServerFactory.createHttpServer(URI.create("http://localhost:8080/"), rc, false);
         LOGGER.info("Smart Campus API running at: " + BASE_URI);
         LOGGER.info("Press ENTER to stop...");
         System.in.read();
