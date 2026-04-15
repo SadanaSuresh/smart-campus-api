@@ -5,15 +5,6 @@ A RESTful API built with JAX-RS (Jersey) and Grizzly for managing campus rooms a
 Module: 5COSC022W — Client-Server Architectures
 Student ID: w21162895
 University of Westminster
----
-
-# Smart Campus Sensor & Room Management API
-
-A RESTful API built with JAX-RS (Jersey) and Grizzly for managing campus rooms and IoT sensors.
-
-Module: 5COSC022W — Client-Server Architectures
-Student ID: w21162895
-University of Westminster
 
 ---
 
