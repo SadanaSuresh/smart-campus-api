@@ -45,7 +45,6 @@ http://localhost:8080/api/v1
 ### Steps
 
 1. Clone the repository
-
 git clone https://github.com/sadanasuresh-01/smart-campus-api.git
 cd smart-campus-api
 
@@ -61,7 +60,6 @@ cd smart-campus-api
 Press ENTER in the output panel to stop the server.
 
 ### Alternative — command line
-
 mvn clean package
 java -jar target/smart-campus-api-1.0.0.jar
 
@@ -125,6 +123,9 @@ The API starts with the following data pre-loaded:
 | 422 Unprocessable Entity | Bad reference | Sensor with non-existent roomId |
 | 500 Internal Server Error | Server error | Unexpected errors |
 
+---
+
+## Project Structure
 ```
 src/main/java/com/smartcampus/
 ├── Main.java                                      # Server bootstrap
@@ -150,6 +151,8 @@ src/main/java/com/smartcampus/
 └── filter/
     └── ApiLoggingFilter.java                      # Request/response logging
 ```
+
+---
 
 ## Conceptual Report
 
@@ -215,12 +218,4 @@ HTTP 422 Unprocessable Entity is the more appropriate status code in this contex
 
 Returning raw Java stack traces to external API clients represents a significant cybersecurity risk. A stack trace contains detailed information about the application's internal workings that should never be visible to users outside the system.
 
-Stack traces expose the full package and class names used within the application, allowing an attacker to map out the internal architecture and identify specific components to target. They also reveal the exact versions of frameworks and libraries in use, which can be cross-referenced against public vulnerability databases to identify known security flaws in those specific versions. In some cases, stack traces include absolute file paths from the server filesystem, disclosing information about the deployment environment and operating system configuration.
-
-In this implementation, the GlobalExceptionMapper intercepts all unhandled exceptions before any details reach the client and returns a generic HTTP 500 Internal Server Error response with a safe, non-revealing message. Full exception details are logged on the server side, where developers can access them for debugging, while nothing sensitive is ever transmitted to the client.
-
-### Part 5.5 - Why JAX-RS Filters are Better for Logging
-
-One approach to logging in an API is to manually insert Logger.info() calls inside every resource method. While this technically achieves logging, it introduces significant maintainability concerns. If a new endpoint is added and the developer omits a logging statement, that endpoint operates without any observability. If the logging format needs to change, every method across every resource class must be updated individually. This level of repetition is both error-prone and difficult to manage as the codebase grows.
-
-JAX-RS filters address this problem in a much cleaner way. By implementing both ContainerRequestFilter and ContainerResponseFilter within a single ApiLoggingFilter class, logging is applied automatically to every request and response that passes through the server. No changes are required in any resource class, and no logging code needs to be added when new endpoints are introduced. This is an example of handling a cross-cutting concern, where a single piece of infrastructure applies uniformly across the entire application without being coupled to any specific resource. The result is consistent, complete observability with minimal code and no risk of coverage gaps.
+Stack traces expose the full package and class names used within the application, allowing an attacker to map out the internal architecture and identify specific components to target. They also reveal the exact versions of frameworks and librari
