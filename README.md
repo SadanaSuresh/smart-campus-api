@@ -40,9 +40,7 @@ The API starts with the following data pre-loaded:
 | 422 Unprocessable Entity | Bad reference | Sensor with non-existent roomId |
 | 500 Internal Server Error | Server error | Unexpected errors |
 
----
-
-## Project Structure
+```
 src/main/java/com/smartcampus/
 ├── Main.java                                      # Server bootstrap
 ├── SmartCampusApplication.java                    # @ApplicationPath("/api/v1")
@@ -65,8 +63,8 @@ src/main/java/com/smartcampus/
 │   ├── SensorUnavailableExceptionMapper.java      # 403 Forbidden
 │   └── GlobalExceptionMapper.java                 # 500 catch-all
 └── filter/
-└── ApiLoggingFilter.java                      # Request/response logging
-
+    └── ApiLoggingFilter.java                      # Request/response logging
+```
 
 ## Conceptual Report
 
