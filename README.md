@@ -1,110 +1,3 @@
-# Smart Campus Sensor & Room Management API
-
-A RESTful API built with JAX-RS (Jersey) and Grizzly for managing campus rooms and IoT sensors.
-
-**Module:** 5COSC022W — Client-Server Architectures  
-**Student ID:** w21162895  
-**University of Westminster**
-
----
-
-## API Overview
-
-This API provides a backend service for the University Smart Campus initiative. It allows facilities managers to manage rooms and the sensors deployed within them, including temperature monitors, CO2 sensors, and occupancy trackers.
-
-### Base URL
-```
-http://localhost:8080/api/v1
-```
-
-### Resources
-| Resource | Path |
-|----------|------|
-| Discovery | `GET /api/v1` |
-| Rooms | `/api/v1/rooms` |
-| Sensors | `/api/v1/sensors` |
-| Sensor Readings | `/api/v1/sensors/{id}/readings` |
-
----
-
-## Tech Stack
-
-- **Java 11+**
-- **JAX-RS** (Jersey 2.39.1)
-- **Grizzly** HTTP Server (embedded)
-- **Jackson** for JSON serialisation
-- **Maven** for build management
-- In-memory storage using `ConcurrentHashMap` (no database required)
-
----
-
-## How to Build and Run
-
-### Prerequisites
-- Java 11 or higher
-- Apache NetBeans 18
-
-### Steps
-
-**1. Clone the repository**
-```bash
-git clone https://github.com/sadanasuresh-01/smart-campus-api.git
-cd smart-campus-api
-```
-
-**2. Open in NetBeans**
-- File → Open Project → select the project folder
-- Right-click project → Build
-
-**3. Run the server**
-- Right-click project → Run
-
-**4. The server starts at:**
-```
-http://localhost:8080/api/v1
-```
-
-Press **ENTER** in the output panel to stop the server.
-
----
-
-## Sample curl Commands
-
-### 1. Discovery — GET API metadata
-```bash
-curl http://localhost:8080/api/v1
-```
-
-### 2. Get all rooms
-```bash
-curl http://localhost:8080/api/v1/rooms
-```
-
-### 3. Create a new room
-```bash
-curl -X POST http://localhost:8080/api/v1/rooms -H "Content-Type: application/json" -d "{\"id\":\"CS-101\",\"name\":\"CS Lab\",\"capacity\":30}"
-```
-
-### 4. Get sensors filtered by type
-```bash
-curl http://localhost:8080/api/v1/sensors?type=Temperature
-```
-
-### 5. Post a sensor reading
-```bash
-curl -X POST http://localhost:8080/api/v1/sensors/TEMP-001/readings -H "Content-Type: application/json" -d "{\"value\":24.5}"
-```
-
-### 6. Attempt to delete a room with sensors (expect 409 Conflict)
-```bash
-curl -X DELETE http://localhost:8080/api/v1/rooms/LIB-301
-```
-
-### 7. Post a reading to a MAINTENANCE sensor (expect 403 Forbidden)
-```bash
-curl -X POST http://localhost:8080/api/v1/sensors/OCC-001/readings -H "Content-Type: application/json" -d "{\"value\":10}"
-```
-
 ---
 
 ## Seeded Test Data
@@ -143,8 +36,6 @@ The API starts with the following data pre-loaded:
 ---
 
 ## Project Structure
-
-```
 src/main/java/com/smartcampus/
 ├── Main.java                                      # Server bootstrap
 ├── SmartCampusApplication.java                    # @ApplicationPath("/api/v1")
@@ -167,10 +58,8 @@ src/main/java/com/smartcampus/
 │   ├── SensorUnavailableExceptionMapper.java      # 403 Forbidden
 │   └── GlobalExceptionMapper.java                 # 500 catch-all
 └── filter/
-    └── ApiLoggingFilter.java                      # Request/response logging
-```
+└── ApiLoggingFilter.java                      # Request/response logging
 
----
 
 ## Conceptual Report
 
@@ -200,7 +89,7 @@ Returning full objects produces a larger initial response but allows the client 
 
 Idempotency in the context of HTTP methods refers to the property where sending the same request multiple times results in the same server state as sending it just once. The key distinction here is that idempotency is measured by the effect on the server state, not by the HTTP response code the client receives.
 
-In this implementation, sending a DELETE request to/api/v1/rooms/{id} for the first time removes the room from the data store and returns a 204 No Content response. Sending the same request a second time returns a 404 Not Found response because the room no longer exists. Although the response codes differ between calls, the server state is identical after both. The room is absent from the system in either case, and this behaviour is fully consistent with the idempotency contract defined by the HTTP specification.
+In this implementation, sending a DELETE request to /api/v1/rooms/{id} for the first time removes the room from the data store and returns a 204 No Content response. Sending the same request a second time returns a 404 Not Found response because the room no longer exists. Although the response codes differ between calls, the server state is identical after both. The room is absent from the system in either case, and this behaviour is fully consistent with the idempotency contract defined by the HTTP specification.
 
 The practical benefit of this design is that clients which accidentally repeat a DELETE request due to network issues or retry logic will not cause any unintended changes to the server state. The outcome remains predictable and safe regardless of how many times the request is sent.
 
