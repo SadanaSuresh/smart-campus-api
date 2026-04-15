@@ -15,7 +15,7 @@ public class Main {
     public static final String BASE_URI = "http://localhost:8080/api/v1/";
 
     public static void main(String[] args) throws IOException {
-        ResourceConfig rc = new ResourceConfig();
+        ResourceConfig rc = ResourceConfig.forApplicationClass(SmartCampusApplication.class);
         rc.register(JacksonFeature.class);
         rc.register(com.smartcampus.resource.DiscoveryResource.class);
         rc.register(com.smartcampus.resource.RoomResource.class);
