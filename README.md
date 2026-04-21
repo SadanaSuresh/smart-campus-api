@@ -4,13 +4,12 @@ A RESTful API built with JAX-RS (Jersey) and Grizzly for managing campus rooms a
 
 Module: 5COSC022W — Client-Server Architectures
 Student ID: w21162895
-University of Westminster
 
 ---
 
 ## API Overview
 
-This API provides a backend service for the University Smart Campus initiative. It allows for managing rooms and the sensors deployed within them, including temperature monitors, CO2 sensors, and occupancy trackers.
+This API provides a backend service for the University Smart Campus initiative. Its aim is for managing rooms and the sensors deployed within them, including temperature monitors, CO2 sensors, and occupancy trackers.
 
 ### Base URL
 http://localhost:8080/api/v1
@@ -155,14 +154,15 @@ src/main/java/com/smartcampus/
 ## Key Design Decisions
 
 Several design decisions were made to keep the API simple, consistent and aligned with REST principles.
+To keep the API simple, consistent and aligned with the REST principles, a lot of desing decisions were taken.
 
-The API follows a resource-oriented structure where rooms, sensors and sensor readings are treated as separate resources with clear relationships between them. Rooms represent physical spaces, sensors belong to rooms, and readings belong to sensors. This hierarchical structure reflects the real-world domain model of a smart campus.
+The API follows a resource-oriented structure where rooms, sensors and sensor readings were treated as separate resources and had a distinct relationshjip between them. The rooms represented physical spaces, sensors belonged to rooms, and readings belonged to sensors. This hierarchical structure reflects in the real-world model of the smart campus.
 
-An in-memory data store was intentionally used instead of a database to keep the project focused on API design rather than persistence configuration. ConcurrentHashMap ensures thread safety when multiple requests modify shared data at the same time. This simulates behaviour expected in a real multi-user environment.
+An in-memory data store was used on purpose instead of a database to keep the project focused on API design. ConcurrentHashMap ensures thread safety when multiple requests change the shared data at the same time. This is top ensure this behaviour can be expected in a real multi-user environment.
 
-HTTP status codes were carefully selected to communicate meaning clearly to API clients. For example, 409 Conflict is returned when attempting to delete a room that still contains sensors because the request is valid but violates a business rule. Similarly, 422 Unprocessable Entity is used when a sensor references a room that does not exist, indicating a logical error in the request body rather than a missing endpoint.
+HTTP status codes were carefully selected to communicate meaning clearly to API clients. For example, 409 Conflict is returned when trying to delete a room that still contains sensors because the request is valid but violates a business rule. Similarly, 422 Unprocessable Entity is used when a sensor references a room that does not exist, showing there is a logical error in the request body rather than a missing endpoint.
 
-Sub-resources were used for sensor readings to reflect containment relationships. A reading cannot exist independently without a sensor. Using the path /sensors/{id}/readings makes this relationship explicit and improves API clarity.
+Sub-resources were used for sensor readings to reflect containment relationships. A reading cannot exist independently without a sensor. Using the path /sensors/{id}/readings makes this relationship more open and improves API clarity.
 
 Consistent JSON response structures were applied for both success and error responses to make the API predictable and easier to integrate with client applications.
 
@@ -173,7 +173,7 @@ Consistent JSON response structures were applied for both success and error resp
 
 In JAX-RS, every request gets a brand new instance of the resource class. Once the response is sent, that instance is discarded. This is the request-scoped lifecycle and it is the default behaviour. Resource classes are not singletons. They do not hold onto data between requests.
 
-This created a storage problem. Every resource object disappears after each request, so you cannot store rooms or sensors inside those classes. The data would be gone instantly. To fix this, a separate DataStore class was built to hold everything in static fields. Static fields belong to the class itself, not to any instance. The data stays alive for as long as the server runs.
+This created a storage problem. Every resource object disappears after each request, so you cannot store rooms or sensors inside those classes. The data would be gone instantly. To make sure this does not happen, a separate DataStore class was built to store everything in static fields, that belonged to the class itself, and not to any instance. The helped the data stays alive for as long as the server runs.
 
 ConcurrentHashMap was chosen over a regular HashMap because multiple requests arrive at the same time and run on separate threads. A regular HashMap breaks under those conditions. Two threads reading and writing at the same time produces wrong data or crashes. ConcurrentHashMap handles this safely without locking the entire structure.
 
@@ -187,23 +187,23 @@ In this project, calling GET /api/v1 returns a JSON object with the URLs for the
 
 When a client calls GET /api/v1/rooms, there are two options. Send back only the room IDs, or send back the full room objects. Both have trade-offs.
 
-Sending only IDs keeps the response small. But the client then needs a separate GET request for each room to get the name and capacity. For 100 rooms that is 100 extra requests. This is the N+1 problem. It slows everything down and puts unnecessary load on the server.
+Sending only IDs keeps the response small. But the client then needs a separate GET request for each room to get the name and capacity. For 100 rooms that is 100 extra requests. This is the N+1 problem. It slows down the process and puts heavy load on the server, which makes the process get much slower.
 
-Sending full objects produces a larger first response. But the client gets everything in one call. For a system where a manager needs to see all rooms at once, this is the right approach. The increase in payload size is minimal compared to the performance cost of repeated HTTP round trips. Reducing the number of requests improves responsiveness and reduces server overhead. Cutting out all those extra round trips makes the experience faster.
+Sending full objects produces a larger first response. But the client gets everything in one call. For a system where a manager needs to see all rooms at once, this is the right approach. The increase in payload size is small compared to the performance cost of repeated HTTP round trips. Reducing the number of requests improves efficieny and reduces server overhead. Cutting out all those extra round trips makes the process faster.
 
 ### Part 2.2 - Idempotency of DELETE
 
-Idempotency means sending the same request multiple times produces the same server state as sending it once. This is about server state, not response codes.
+Idempotency means sending the same request multiple times and produces the same server state as sending it just once. This is about the server state, and not the response codes.
 
-The first DELETE to /api/v1/rooms/{id} removes the room and returns 204 No Content. Sending the same request again returns 404 Not Found because the room is already gone. The response codes differ but the server state is identical after both calls. The room does not exist either way. This satisfies the idempotency requirement in the HTTP specification.
+The first DELETE to /api/v1/rooms/{id} removes the room and returns a 204 No Content. Sending the same request again returns a 404 Not Found because the room is already gone. The response codes are different but the server state is identical after both calls. The room does not exist either way. This satisfies the requirement in the HTTP specification.
 
-If a client accidentally sends the same DELETE twice due to a timeout or retry, nothing breaks on the server. The outcome is consistent no matter how many times the request is sent.
+If a client accidentally sends the same DELETE twice due to a timeout or retry, nothing happens to the server. The outcome is the same no matter how many times the request is sent.
 
 ### Part 3.1 - The @Consumes Annotation and Content-Type Mismatches
 
-Adding @Consumes(MediaType.APPLICATION_JSON) to a POST method tells JAX-RS to only accept requests where the Content-Type header is application/json. This sets a firm rule at the API level about what format incoming data must be in.
+Adding @Consumes(MediaType.APPLICATION_JSON) to a POST method tells JAX-RS to only accept requests where the Content-Type header is application/json. This sets a firm rule at the API level about what format the incominf data should be coming in, making process easier. 
 
-If a client sends data with the wrong Content-Type like text/plain or application/xml, JAX-RS blocks the request before the method runs. It sends back a 415 Unsupported Media Type response automatically. The method body never executes. There is no need to write manual format checking inside the method. JAX-RS takes care of it.
+If a client sends data with the wrong Content-Type like text/plain or application/xml, JAX-RS will block the request before the method runs, which returns a 415 Unsupported Media Type response automatically. The method body will never produce an output. There is no need to write manual format checking inside the method. JAX-RS takes care of it.
 
 From a design point of view, this keeps the resource code focused on business logic, improves reliability, and gives clients a clear error when they send the wrong format.
 
@@ -225,9 +225,9 @@ This separation improves maintainability because future changes to reading logic
 
 ### Part 4.2 - Why HTTP 422 is More Appropriate Than 404
 
-When a client tries to register a sensor with a roomId that does not exist, returning 404 Not Found would be wrong. A 404 tells the client the URL does not exist. But /api/v1/sensors is working fine. The problem is not the URL. The problem is the data inside the request body.
+When a client tries to register a sensor with a roomId that does not exist, returning a 404 Not Found would be wrong. A 404 tells the client the URL does not exist, but the /api/v1/sensors is working fine. The problem is not the URL, but within the data inside the request body.
 
-HTTP 422 Unprocessable Entity is the correct response. It tells the client the request arrived fine and the JSON was valid, but the content had a logic error. In this case the error is a reference to a room that does not exist. A 404 makes a developer think they called the wrong URL. A 422 makes it clear the problem is in the data they sent.
+HTTP 422 Unprocessable Entity is the correct response. It tells the client that the request arrived fine and the JSON was valid, but the content had a logic error. In this case the error is a reference to a room that does not exist. A 404 makes a developer migh call it as using the wrong URL. A 422 makes it clear the problem is in the data they sent.
 
 ### Part 5.1 - Cybersecurity Risks of Exposing Stack Traces
 
