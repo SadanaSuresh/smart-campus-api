@@ -8,57 +8,57 @@ import com.smartcampus.model.SensorReading;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-/**
- * Sub-resource class for managing sensor readings.
- * Handles GET and POST for /api/v1/sensors/{sensorId}/readings
- * This class is returned by the sub-resource locator in SensorResource.
- */
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class SensorReadingResource {
 
     private final String sensorId;
 
-    public SensorReadingResource(String sensorId) {
+    public SensorReadingResource(String sensorId){
         this.sensorId = sensorId;
     }
 
     @GET
-    public Response getReadings() {
-        if (!DataStore.sensors.containsKey(sensorId))
-            return Response.status(404).entity(err("Sensor not found: " + sensorId)).build();
-        List<SensorReading> list = DataStore.readings.getOrDefault(sensorId, new ArrayList<>());
-        return Response.ok(list).build();
+    public Response getReadings(){
+
+        List<SensorReading> history = DataStore.readings.get(sensorId);
+
+        if (history == null)
+            return Response.status(404).entity(error("Sensor not found")).build();
+
+        return Response.ok(history).build();
     }
 
     @POST
-    public Response addReading(SensorReading reading) {
+    public Response addReading(SensorReading reading){
+
         Sensor sensor = DataStore.sensors.get(sensorId);
+
         if (sensor == null)
-            return Response.status(404).entity(err("Sensor not found: " + sensorId)).build();
+            return Response.status(404).entity(error("Sensor not found")).build();
+
         if ("MAINTENANCE".equalsIgnoreCase(sensor.getStatus()))
             throw new SensorUnavailableException(sensorId);
 
-        String rid = "R-" + System.currentTimeMillis();
-        SensorReading r = new SensorReading(rid, sensorId, reading.getValue());
-        DataStore.readings.get(sensorId).add(r);
+        reading.setTimestamp(System.currentTimeMillis());
 
-        // Side effect: update parent sensor's currentValue
+        DataStore.readings.get(sensorId).add(reading);
+
+        // update latest sensor value
         sensor.setCurrentValue(reading.getValue());
 
-        URI location = URI.create("http://localhost:8080/api/v1/sensors/" + sensorId + "/readings/" + rid);
-        return Response.created(location).entity(r).build();
+        return Response.status(201)
+                .entity(reading)
+                .build();
     }
 
-    private Map<String, String> err(String msg) {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("error", msg);
-        return m;
+    private Map<String,String> error(String message){
+
+        Map<String,String> body = new LinkedHashMap<>();
+        body.put("error", message);
+
+        return body;
     }
 }
