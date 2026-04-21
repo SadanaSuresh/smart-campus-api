@@ -8,9 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /*
- * Simple discovery endpoint for the base API path.
- * It gives clients a quick summary of the API and the main resource links.
- * This supports the idea of HATEOAS because the client can navigate using links in the response.
+ * This is the base discovery endpoint for the API.
+ * It gives clients the main links they need so they can navigate from the root.
  */
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
@@ -28,12 +27,10 @@ public class DiscoveryResource {
 
         Map<String, String> resources = new LinkedHashMap<>();
 
-        // these are the main entry points a client would usually need first
+        // these are the main entry points a client would usually look for first
         resources.put("discovery", "http://localhost:8080/api/v1");
         resources.put("rooms", "http://localhost:8080/api/v1/rooms");
         resources.put("sensors", "http://localhost:8080/api/v1/sensors");
-
-        // readings are nested under a specific sensor, so this is shown as a template
         resources.put("sensorReadings", "http://localhost:8080/api/v1/sensors/{sensorId}/readings");
 
         info.put("resources", resources);
