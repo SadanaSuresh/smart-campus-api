@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /*
- * Acts as a simple in-memory store for the API.
- * Static fields are used so data is shared across requests.
- * ConcurrentHashMap allows multiple requests to safely access the data at the same time.
+ * This class acts as a simple in memory store for the whole API.
+ * Static fields are used so the data is shared across all requests.
+ * ConcurrentHashMap helps when multiple requests hit the API at the same time.
  */
 public class DataStore {
 
     public static final ConcurrentHashMap<String, Room> rooms = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<String, Sensor> sensors = new ConcurrentHashMap<>();
 
-    // each sensor has its own list of readings
-    // wrapping the list makes adding readings safer when multiple requests happen close together
+    // each sensor has its own reading history
+    // the list is wrapped so adding readings is safer if requests happen close together
     public static final ConcurrentHashMap<String, List<SensorReading>> readings = new ConcurrentHashMap<>();
 
     static {
@@ -34,7 +34,7 @@ public class DataStore {
         Sensor co2 = new Sensor("CO2-001", "CO2", "ACTIVE", "ENG-101", 400.0);
         Sensor occ = new Sensor("OCC-001", "Occupancy", "MAINTENANCE", "LIB-301", 0.0);
 
-        // link sensors to rooms
+        // connect sensors to their rooms
         lib.getSensorIds().add("TEMP-001");
         lib.getSensorIds().add("OCC-001");
         eng.getSensorIds().add("CO2-001");
@@ -46,13 +46,13 @@ public class DataStore {
         sensors.put(co2.getId(), co2);
         sensors.put(occ.getId(), occ);
 
-        // start each sensor with an empty history list
+        // give each sensor its own empty reading history to begin with
         readings.put("TEMP-001", Collections.synchronizedList(new ArrayList<>()));
         readings.put("CO2-001", Collections.synchronizedList(new ArrayList<>()));
         readings.put("OCC-001", Collections.synchronizedList(new ArrayList<>()));
     }
 
     private DataStore() {
-        // stops this class being created accidentally
+        // stops this utility class being created by mistake
     }
 }
