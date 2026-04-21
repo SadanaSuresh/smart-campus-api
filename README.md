@@ -152,6 +152,20 @@ src/main/java/com/smartcampus/
     └── ApiLoggingFilter.java                      # Request/response logging
 ```
 
+## Key Design Decisions
+
+Several design decisions were made to keep the API simple, consistent and aligned with REST principles.
+
+The API follows a resource-oriented structure where rooms, sensors and sensor readings are treated as separate resources with clear relationships between them. Rooms represent physical spaces, sensors belong to rooms, and readings belong to sensors. This hierarchical structure reflects the real-world domain model of a smart campus.
+
+An in-memory data store was intentionally used instead of a database to keep the project focused on API design rather than persistence configuration. ConcurrentHashMap ensures thread safety when multiple requests modify shared data at the same time. This simulates behaviour expected in a real multi-user environment.
+
+HTTP status codes were carefully selected to communicate meaning clearly to API clients. For example, 409 Conflict is returned when attempting to delete a room that still contains sensors because the request is valid but violates a business rule. Similarly, 422 Unprocessable Entity is used when a sensor references a room that does not exist, indicating a logical error in the request body rather than a missing endpoint.
+
+Sub-resources were used for sensor readings to reflect containment relationships. A reading cannot exist independently without a sensor. Using the path /sensors/{id}/readings makes this relationship explicit and improves API clarity.
+
+Consistent JSON response structures were applied for both success and error responses to make the API predictable and easier to integrate with client applications.
+
 ---
 ## Conceptual Report
 
@@ -167,7 +181,7 @@ ConcurrentHashMap was chosen over a regular HashMap because multiple requests ar
 
 HATEOAS stands for Hypermedia as the Engine of Application State. The principle is simple. An API should include links in its responses so clients can navigate without knowing every URL in advance. This is widely considered good REST design.
 
-In this project, calling GET /api/v1 returns a JSON object with the URLs for the rooms and sensors collections. A developer with only the base URL makes one request and finds everything else. Static documentation breaks the moment URLs change. With this approach, clients always get accurate links directly from the response.
+In this project, calling GET /api/v1 returns a JSON object with the URLs for the rooms and sensors collections. A developer with only the base URL makes one request and finds everything else.Hardcoded URLs create tight coupling between client and server. If the API structure changes, every client must be updated. HATEOAS reduces this coupling by allowing clients to dynamically discover valid endpoints directly from the API response. With this approach, clients always get accurate links directly from the response.
 
 ### Part 2.1 - Returning Full Objects vs IDs Only
 
@@ -175,7 +189,7 @@ When a client calls GET /api/v1/rooms, there are two options. Send back only the
 
 Sending only IDs keeps the response small. But the client then needs a separate GET request for each room to get the name and capacity. For 100 rooms that is 100 extra requests. This is the N+1 problem. It slows everything down and puts unnecessary load on the server.
 
-Sending full objects produces a larger first response. But the client gets everything in one call. For a system where a manager needs to see all rooms at once, this is the right approach. The extra data size is negligible on modern networks. Cutting out all those extra round trips makes the experience faster.
+Sending full objects produces a larger first response. But the client gets everything in one call. For a system where a manager needs to see all rooms at once, this is the right approach. The increase in payload size is minimal compared to the performance cost of repeated HTTP round trips. Reducing the number of requests improves responsiveness and reduces server overhead. Cutting out all those extra round trips makes the experience faster.
 
 ### Part 2.2 - Idempotency of DELETE
 
@@ -207,13 +221,15 @@ All reading logic was not placed inside SensorResource. A separate SensorReading
 
 Each class has one job. SensorResource handles sensors. SensorReadingResource handles reading history. If the reading logic changes, only SensorReadingResource gets updated. There is no risk of breaking anything in SensorResource. Each class can be tested independently. The codebase stays manageable as the project grows.
 
-### Part 5.2 - Why HTTP 422 is More Appropriate Than 404
+This separation improves maintainability because future changes to reading logic can be implemented without affecting sensor endpoints.
+
+### Part 4.2 - Why HTTP 422 is More Appropriate Than 404
 
 When a client tries to register a sensor with a roomId that does not exist, returning 404 Not Found would be wrong. A 404 tells the client the URL does not exist. But /api/v1/sensors is working fine. The problem is not the URL. The problem is the data inside the request body.
 
 HTTP 422 Unprocessable Entity is the correct response. It tells the client the request arrived fine and the JSON was valid, but the content had a logic error. In this case the error is a reference to a room that does not exist. A 404 makes a developer think they called the wrong URL. A 422 makes it clear the problem is in the data they sent.
 
-### Part 5.4 - Cybersecurity Risks of Exposing Stack Traces
+### Part 5.1 - Cybersecurity Risks of Exposing Stack Traces
 
 Sending raw Java stack traces to API clients is a serious security risk. Stack traces contain internal application detail that should never leave the server.
 
@@ -221,7 +237,7 @@ They expose full package and class names. An attacker gets a map of the applicat
 
 A GlobalExceptionMapper was built to stop this. It catches all unhandled exceptions and returns a plain generic 500 message. Nothing internal reaches the client. All useful error detail is logged server-side where only developers see it.
 
-### Part 5.5 - Why JAX-RS Filters are Better for Logging
+### Part 5.2 - Why JAX-RS Filters are Better for Logging
 
 Adding Logger.info() calls inside every resource method works but creates a mess. If the logging format changes, every single method across every resource class needs updating. If someone adds a new endpoint and forgets the logging line, that endpoint runs with no visibility at all.
 
