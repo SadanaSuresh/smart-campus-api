@@ -9,12 +9,18 @@ import java.util.Map;
 
 @Provider
 public class RoomNotEmptyExceptionMapper implements ExceptionMapper<RoomNotEmptyException> {
+
     @Override
     public Response toResponse(RoomNotEmptyException e) {
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", 409);
         body.put("error", "Conflict");
-        body.put("message", "Cannot delete room '" + e.getRoomId() + "': " + e.getSensorCount() + " sensor(s) still assigned.");
-        return Response.status(409).type(MediaType.APPLICATION_JSON).entity(body).build();
+        body.put("message", "Cannot delete room '" + e.getRoomId() + "' because it still has " + e.getSensorCount() + " sensor(s) assigned.");
+
+        return Response.status(409)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(body)
+                .build();
     }
 }
