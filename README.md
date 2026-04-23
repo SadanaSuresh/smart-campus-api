@@ -177,11 +177,15 @@ This created a storage problem. Every resource object disappears after each requ
 
 ConcurrentHashMap was chosen over a regular HashMap because multiple requests arrive at the same time and run on separate threads. A regular HashMap breaks under those conditions. Two threads reading and writing at the same time produces wrong data or crashes. ConcurrentHashMap handles this safely without locking the entire structure.
 
+An alternative approach would have been using a database or dependency injection with singleton-scoped resources. However, this was not used as the coursework required an in-memory solution. Using a static datastore was a simpler and more appropriate choice for this context.
+
 ### Part 1.2 - HATEOAS and the Discovery Endpoint
 
 HATEOAS stands for Hypermedia as the Engine of Application State. The principle is simple. An API should include links in its responses so clients can navigate without knowing every URL in advance. This is widely considered good REST design.
 
 In this project, calling GET /api/v1 returns a JSON object with the URLs for the rooms and sensors collections. A developer with only the base URL makes one request and finds everything else.Hardcoded URLs create tight coupling between client and server. If the API structure changes, every client must be updated. HATEOAS reduces this coupling by allowing clients to dynamically discover valid endpoints directly from the API response. With this approach, clients always get accurate links directly from the response.
+
+An alternative would have been to rely entirely on static documentation. However, this increases coupling between client and server. Using a discovery endpoint reduces this dependency and makes the API more adaptable to change.
 
 ### Part 2.1 - Returning Full Objects vs IDs Only
 
@@ -191,6 +195,8 @@ Sending only IDs keeps the response small. But the client then needs a separate 
 
 Sending full objects produces a larger first response. But the client gets everything in one call. For a system where a manager needs to see all rooms at once, this is the right approach. The increase in payload size is small compared to the performance cost of repeated HTTP round trips. Reducing the number of requests improves efficieny and reduces server overhead. Cutting out all those extra round trips makes the process faster.
 
+Returning only IDs could reduce response size, but it significantly increases the number of required client requests. For this use case, reducing network calls was prioritised over minimising payload size.
+
 ### Part 2.2 - Idempotency of DELETE
 
 Idempotency means sending the same request multiple times and produces the same server state as sending it just once. This is about the server state, and not the response codes.
@@ -198,6 +204,8 @@ Idempotency means sending the same request multiple times and produces the same 
 The first DELETE to /api/v1/rooms/{id} removes the room and returns a 204 No Content. Sending the same request again returns a 404 Not Found because the room is already gone. The response codes are different but the server state is identical after both calls. The room does not exist either way. This satisfies the requirement in the HTTP specification.
 
 If a client accidentally sends the same DELETE twice due to a timeout or retry, nothing happens to the server. The outcome is the same no matter how many times the request is sent.
+
+While the response codes differ between repeated DELETE requests, the important factor is that the server state remains unchanged. This aligns with the HTTP definition of idempotency.
 
 ### Part 3.1 - The @Consumes Annotation and Content-Type Mismatches
 
@@ -207,6 +215,8 @@ If a client sends data with the wrong Content-Type like text/plain or applicatio
 
 From a design point of view, this keeps the resource code focused on business logic, improves reliability, and gives clients a clear error when they send the wrong format.
 
+Manual validation of content type could also be implemented, but relying on JAX-RS simplifies the code and ensures consistent behaviour across endpoints.
+
 ### Part 3.2 - @QueryParam vs Path Parameter for Filtering
 
 When adding type filtering to the sensors endpoint, a choice had to be made. Put the filter in the URL path like /api/v1/sensors/type/CO2, or use a query parameter like /api/v1/sensors?type=CO2. The query parameter approach was chosen.
@@ -214,6 +224,8 @@ When adding type filtering to the sensors endpoint, a choice had to be made. Put
 Path parameters point to a specific resource. Something like /sensors/TEMP-001 identifies one sensor by its ID. A type filter does not identify a specific resource. It narrows down a list. Putting a filter in the path gives it a meaning it was not built for and breaks standard REST conventions.
 
 Query parameters are designed for optional filtering. They do not change what resource is being accessed. The endpoint works with or without the filter. And combining multiple filters like ?type=CO2&status=ACTIVE requires no changes to the URL structure at all. The API stays clean and easy to extend.
+
+Using path segments for filtering would make the API less flexible and harder to extend. Query parameters allow multiple filters to be combined without changing the endpoint structure.
 
 ### Part 4.1 - The Sub-Resource Locator Pattern
 
@@ -223,11 +235,15 @@ Each class has one job. SensorResource handles sensors. SensorReadingResource ha
 
 This separation improves maintainability because future changes to reading logic can be implemented without affecting sensor endpoints.
 
+Alternatively, readings could have been handled within the main sensor resource, but this would lead to a large and less maintainable class. Separating them improves modularity.
+
 ### Part 4.2 - Why HTTP 422 is More Appropriate Than 404
 
 When a client tries to register a sensor with a roomId that does not exist, returning a 404 Not Found would be wrong. A 404 tells the client the URL does not exist, but the /api/v1/sensors is working fine. The problem is not the URL, but within the data inside the request body.
 
 HTTP 422 Unprocessable Entity is the correct response. It tells the client that the request arrived fine and the JSON was valid, but the content had a logic error. In this case the error is a reference to a room that does not exist. A 404 makes a developer migh call it as using the wrong URL. A 422 makes it clear the problem is in the data they sent.
+
+Some APIs incorrectly use 404 for this case, but this can mislead clients into thinking the endpoint itself is invalid. Using 422 provides more precise feedback about the nature of the error.
 
 ### Part 5.1 - Cybersecurity Risks of Exposing Stack Traces
 
@@ -237,8 +253,12 @@ They expose full package and class names. An attacker gets a map of the applicat
 
 A GlobalExceptionMapper was built to stop this. It catches all unhandled exceptions and returns a plain generic 500 message. Nothing internal reaches the client. All useful error detail is logged server-side where only developers see it.
 
+While detailed errors are useful for debugging, exposing them publicly introduces security risks. Logging them internally provides a safer alternative.
+
 ### Part 5.2 - Why JAX-RS Filters are Better for Logging
 
 Adding Logger.info() calls inside every resource method works but creates a mess. If the logging format changes, every single method across every resource class needs updating. If someone adds a new endpoint and forgets the logging line, that endpoint runs with no visibility at all.
 
 JAX-RS filters solve this cleanly. By building ContainerRequestFilter and ContainerResponseFilter into one ApiLoggingFilter class, logging covers every request and response automatically. No resource class needs touching. New endpoints get logged without any extra work. One class handles logging for the whole application. The result is full coverage with far less code.
+
+Logging could also be implemented manually in each resource, but this would lead to duplicated code and inconsistency. Filters provide a centralised and scalable solution.
