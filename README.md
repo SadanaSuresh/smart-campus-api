@@ -2,7 +2,7 @@
 
 A RESTful API built with JAX-RS (Jersey) and Grizzly for managing campus rooms and IoT sensors.
 
-Module: 5COSC022W — Client-Server Architectures
+Module: 5COSC022W - Client-Server Architectures
 Student ID: w21162895
 
 ---
@@ -58,7 +58,7 @@ cd smart-campus-api
 
 Press ENTER in the output panel to stop the server.
 
-### Alternative — command line
+### Alternative - command line
 mvn clean package
 java -jar target/smart-campus-api-1.0.0.jar
 
@@ -66,7 +66,7 @@ java -jar target/smart-campus-api-1.0.0.jar
 
 ## Sample curl Commands
 
-### 1. Discovery — GET API metadata
+### 1. Discovery - GET API metadata
 curl http://localhost:8080/api/v1
 
 ### 2. Get all rooms
