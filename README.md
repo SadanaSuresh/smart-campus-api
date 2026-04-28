@@ -237,7 +237,7 @@ This separation improves maintainability because future changes to reading logic
 
 Alternatively, readings could have been handled within the main sensor resource, but this would lead to a large and less maintainable class. Separating them improves modularity.
 
-### Part 4.2 - Why HTTP 422 is More Appropriate Than 404
+### Part 5.2 - Why HTTP 422 is More Appropriate Than 404
 
 When a client tries to register a sensor with a roomId that does not exist, returning a 404 Not Found would be wrong. A 404 tells the client the URL does not exist, but the /api/v1/sensors is working fine. The problem is not the URL, but within the data inside the request body.
 
@@ -245,7 +245,7 @@ HTTP 422 Unprocessable Entity is the correct response. It tells the client that 
 
 Some APIs incorrectly use 404 for this case, but this can mislead clients into thinking the endpoint itself is invalid. Using 422 provides more precise feedback about the nature of the error.
 
-### Part 5.1 - Cybersecurity Risks of Exposing Stack Traces
+### Part 5.4 - Cybersecurity Risks of Exposing Stack Traces
 
 Sending raw Java stack traces to API clients is a serious security risk. Stack traces contain internal application detail that should never leave the server.
 
@@ -255,7 +255,7 @@ A GlobalExceptionMapper was built to stop this. It catches all unhandled excepti
 
 While detailed errors are useful for debugging, exposing them publicly introduces security risks. Logging them internally provides a safer alternative.
 
-### Part 5.2 - Why JAX-RS Filters are Better for Logging
+### Part 5.5 - Why JAX-RS Filters are Better for Logging
 
 Adding Logger.info() calls inside every resource method works but creates a mess. If the logging format changes, every single method across every resource class needs updating. If someone adds a new endpoint and forgets the logging line, that endpoint runs with no visibility at all.
 
